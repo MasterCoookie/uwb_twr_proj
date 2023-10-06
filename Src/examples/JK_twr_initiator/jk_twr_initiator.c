@@ -146,6 +146,21 @@ void transmit_poll_msg(void)
     dwt_starttx(DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED);
 }
 
+void await_poll_response(void)
+{
+    /* We assume that the transmission is achieved correctly, poll for reception of a frame or error/timeout. See NOTE 8 below. */
+    while (!((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) & (SYS_STATUS_RXFCG_BIT_MASK | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR)))
+    { };
+}
+
+uint32_t read_response_frame(void)
+{
+    /* Clear good RX frame event in the DW IC status register. */
+    dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_RXFCG_BIT_MASK);
+
+    return dwt_read32bitreg(RX_FINFO_ID) & RXFLEN_MASK;
+}
+
 /*! ------------------------------------------------------------------------------------------------------------------
  * @fn main()
  *
@@ -168,22 +183,15 @@ int jk_twr_initiator(void)
     	test_run_info((unsigned char *)"JK");
         transmit_poll_msg();
 
-        /* We assume that the transmission is achieved correctly, poll for reception of a frame or error/timeout. See NOTE 8 below. */
-        while (!((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) & (SYS_STATUS_RXFCG_BIT_MASK | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR)))
-        { };
+        await_poll_response();
 
         /* Increment frame sequence number after transmission of the poll message (modulo 256). */
         frame_seq_nb++;
 
         if (status_reg & SYS_STATUS_RXFCG_BIT_MASK)
         {
-            uint32_t frame_len;
+            uint32_t frame_len = read_response_frame();
 
-            /* Clear good RX frame event in the DW IC status register. */
-            dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_RXFCG_BIT_MASK);
-
-            /* A frame has been received, read it into the local buffer. */
-            frame_len = dwt_read32bitreg(RX_FINFO_ID) & RXFLEN_MASK;
             if (frame_len <= sizeof(rx_buffer))
             {
                 dwt_readrxdata(rx_buffer, frame_len, 0);
