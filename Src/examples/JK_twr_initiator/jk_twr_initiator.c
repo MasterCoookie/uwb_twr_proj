@@ -13,6 +13,7 @@
 #include <shared_functions.h>
 #include <example_selection.h>
 #include <config_options.h>
+#include <stdbool.h>
 
 #if defined(JK_TWR_INITIATOR)
 
@@ -161,6 +162,30 @@ uint32_t read_response_frame(void)
     return dwt_read32bitreg(RX_FINFO_ID) & RXFLEN_MASK;
 }
 
+bool validate_response_frame(uint32_t _frame_len)
+{
+    if (_frame_len <= sizeof(rx_buffer))
+    {
+        dwt_readrxdata(rx_buffer, _frame_len, 0);
+
+        /* Check that the frame is the expected response from the companion "SS TWR responder" example.
+         * As the sequence number field of the frame is not relevant, it is cleared to simplify the validation of the frame. */
+        rx_buffer[ALL_MSG_SN_IDX] = 0;
+        if (memcmp(rx_buffer, rx_resp_msg, ALL_MSG_COMMON_LEN) == 0)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    else
+    {
+        return false;
+    }
+}
+
 /*! ------------------------------------------------------------------------------------------------------------------
  * @fn main()
  *
@@ -192,41 +217,33 @@ int jk_twr_initiator(void)
         {
             uint32_t frame_len = read_response_frame();
 
-            if (frame_len <= sizeof(rx_buffer))
+            if(validate_response_frame(frame_len))
             {
-                dwt_readrxdata(rx_buffer, frame_len, 0);
+                uint32_t poll_tx_ts, resp_rx_ts, poll_rx_ts, resp_tx_ts;
+                int32_t rtd_init, rtd_resp;
+                float clockOffsetRatio ;
 
-                /* Check that the frame is the expected response from the companion "SS TWR responder" example.
-                 * As the sequence number field of the frame is not relevant, it is cleared to simplify the validation of the frame. */
-                rx_buffer[ALL_MSG_SN_IDX] = 0;
-                if (memcmp(rx_buffer, rx_resp_msg, ALL_MSG_COMMON_LEN) == 0)
-                {
-                    uint32_t poll_tx_ts, resp_rx_ts, poll_rx_ts, resp_tx_ts;
-                    int32_t rtd_init, rtd_resp;
-                    float clockOffsetRatio ;
+                /* Retrieve poll transmission and response reception timestamps. See NOTE 9 below. */
+                poll_tx_ts = dwt_readtxtimestamplo32();
+                resp_rx_ts = dwt_readrxtimestamplo32();
 
-                    /* Retrieve poll transmission and response reception timestamps. See NOTE 9 below. */
-                    poll_tx_ts = dwt_readtxtimestamplo32();
-                    resp_rx_ts = dwt_readrxtimestamplo32();
+                /* Read carrier integrator value and calculate clock offset ratio. See NOTE 11 below. */
+                clockOffsetRatio = ((float)dwt_readclockoffset()) / (uint32_t)(1<<26);
 
-                    /* Read carrier integrator value and calculate clock offset ratio. See NOTE 11 below. */
-                    clockOffsetRatio = ((float)dwt_readclockoffset()) / (uint32_t)(1<<26);
+                /* Get timestamps embedded in response message. */
+                resp_msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX], &poll_rx_ts);
+                resp_msg_get_ts(&rx_buffer[RESP_MSG_RESP_TX_TS_IDX], &resp_tx_ts);
 
-                    /* Get timestamps embedded in response message. */
-                    resp_msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX], &poll_rx_ts);
-                    resp_msg_get_ts(&rx_buffer[RESP_MSG_RESP_TX_TS_IDX], &resp_tx_ts);
+                /* Compute time of flight and distance, using clock offset ratio to correct for differing local and remote clock rates */
+                rtd_init = resp_rx_ts - poll_tx_ts;
+                rtd_resp = resp_tx_ts - poll_rx_ts;
 
-                    /* Compute time of flight and distance, using clock offset ratio to correct for differing local and remote clock rates */
-                    rtd_init = resp_rx_ts - poll_tx_ts;
-                    rtd_resp = resp_tx_ts - poll_rx_ts;
+                tof = ((rtd_init - rtd_resp * (1 - clockOffsetRatio)) / 2.0) * DWT_TIME_UNITS;
+                distance = tof * SPEED_OF_LIGHT;
 
-                    tof = ((rtd_init - rtd_resp * (1 - clockOffsetRatio)) / 2.0) * DWT_TIME_UNITS;
-                    distance = tof * SPEED_OF_LIGHT;
-
-                    /* Display computed distance on LCD. */
-                    snprintf(dist_str, sizeof(dist_str), "DIST: %3.2f m", distance);
-                    test_run_info((unsigned char *)dist_str);
-                }
+                /* Display computed distance on LCD. */
+                snprintf(dist_str, sizeof(dist_str), "DIST: %3.2f m", distance);
+                test_run_info((unsigned char *)dist_str);
             }
         }
         else
