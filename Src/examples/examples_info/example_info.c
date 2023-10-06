@@ -351,6 +351,12 @@ void build_examples(void)
     example_pointer=le_pend_rx;
     test_cnt++;
 #endif
+#ifdef JK_TWR_INITIATOR
+    extern int jk_twr_initiator(void);
+
+    example_pointer=jk_twr_initiator;
+    test_cnt++;
+#endif
     //Check that only 1 test was enabled in test_selection.h file
     assert(test_cnt==1);
 

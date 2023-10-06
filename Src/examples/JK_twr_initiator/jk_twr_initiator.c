@@ -1,20 +1,8 @@
+
 /*! ----------------------------------------------------------------------------
- *  @file    ss_twr_initiator.c
- *  @brief   Single-sided two-way ranging (SS TWR) initiator example code
+ *  @file    jk_twr_initiator.c
+ *  @brief   Single-sided two-way ranging (SS TWR) initiator refactored code
  *
- *           This is a simple code example which acts as the initiator in a SS TWR distance measurement exchange. This application sends a "poll"
- *           frame (recording the TX time-stamp of the poll), after which it waits for a "response" message from the "DS TWR responder" example
- *           code (companion to this application) to complete the exchange. The response message contains the remote responder's time-stamps of poll
- *           RX, and response TX. With this data and the local time-stamps, (of poll TX and response RX), this example application works out a value
- *           for the time-of-flight over-the-air and, thus, the estimated distance between the two devices, which it writes to the LCD.
- *
- * @attention
- *
- * Copyright 2015-2020 (c) Decawave Ltd, Dublin, Ireland.
- *
- * All rights reserved.
- *
- * @author Decawave
  */
 
 #include <deca_device_api.h>
@@ -26,12 +14,12 @@
 #include <example_selection.h>
 #include <config_options.h>
 
-#if defined(TEST_SS_TWR_INITIATOR)
+#if defined(JK_TWR_INITIATOR)
 
 extern void test_run_info(unsigned char *data);
 
 /* Example application name */
-#define APP_NAME "SS TWR INIT v1.0"
+#define APP_NAME "JK TWR INIT v1.0"
 
 /* Default communication configuration. We use default non-STS DW mode. */
 static dwt_config_t config = {
@@ -116,7 +104,7 @@ extern dwt_txconfig_t txconfig_options;
  *
  * @return none
  */
-int ss_twr_initiator(void)
+int jk_twr_initiator(void)
 {
     /* Display application name on LCD. */
     test_run_info((unsigned char *)APP_NAME);
@@ -168,6 +156,7 @@ int ss_twr_initiator(void)
     /* Loop forever initiating ranging exchanges. */
     while (1)
     {
+    	test_run_info((unsigned char *)"JK");
         /* Write frame data to DW IC and prepare transmission. See NOTE 7 below. */
         tx_poll_msg[ALL_MSG_SN_IDX] = frame_seq_nb;
         dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS_BIT_MASK);

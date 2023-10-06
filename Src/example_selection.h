@@ -56,8 +56,8 @@ extern "C" {
 //#define TEST_DS_TWR_STS_SDC_INITIATOR
 //#define TEST_DS_TWR_STS_SDC_RESPONDER
 
-#define TEST_SS_TWR_INITIATOR
-//#define TEST_SS_TWR_RESPONDER
+//#define TEST_SS_TWR_INITIATOR
+// #define TEST_SS_TWR_RESPONDER
 
 //#define TEST_SS_TWR_INITIATOR_STS
 //#define TEST_SS_TWR_RESPONDER_STS
@@ -83,6 +83,8 @@ extern "C" {
 
 //#define TEST_FRAME_FILTERING_TX
 //#define TEST_FRAME_FILTERING_RX
+
+#define JK_TWR_INITIATOR
 
 #ifdef __cplusplus
 }
