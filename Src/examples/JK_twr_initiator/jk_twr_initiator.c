@@ -186,6 +186,28 @@ bool validate_response_frame(uint32_t _frame_len)
     }
 }
 
+void read_timestamps(uint32_t *poll_tx_ts, uint32_t *resp_rx_ts, float *clockOffsetRatio)
+{
+    /* Retrieve poll transmission and response reception timestamps. See NOTE 9 below. */
+    *poll_tx_ts = dwt_readtxtimestamplo32();
+    *resp_rx_ts = dwt_readrxtimestamplo32();
+
+    /* Read carrier integrator value and calculate clock offset ratio. See NOTE 11 below. */
+    *clockOffsetRatio = ((float)dwt_readclockoffset()) / (uint32_t)(1<<26);
+}
+
+double calculate_distance(uint32_t resp_rx_ts, uint32_t poll_tx_ts, uint32_t resp_tx_ts, uint32_t poll_rx_ts, float clockOffsetRatio)
+{
+    int32_t rtd_init, rtd_resp;
+
+    /* Compute time of flight and distance, using clock offset ratio to correct for differing local and remote clock rates */
+    rtd_init = resp_rx_ts - poll_tx_ts;
+    rtd_resp = resp_tx_ts - poll_rx_ts;
+
+    tof = ((rtd_init - rtd_resp * (1 - clockOffsetRatio)) / 2.0) * DWT_TIME_UNITS;
+    return tof * SPEED_OF_LIGHT;
+}
+
 /*! ------------------------------------------------------------------------------------------------------------------
  * @fn main()
  *
@@ -205,7 +227,7 @@ int jk_twr_initiator(void)
     /* Loop forever initiating ranging exchanges. */
     while (1)
     {
-    	test_run_info((unsigned char *)"JK");
+    	test_run_info((unsigned char *)"JK TWR Initiator");
         transmit_poll_msg();
 
         await_poll_response();
@@ -215,31 +237,18 @@ int jk_twr_initiator(void)
 
         if (status_reg & SYS_STATUS_RXFCG_BIT_MASK)
         {
-            uint32_t frame_len = read_response_frame();
-
-            if(validate_response_frame(frame_len))
+            if(validate_response_frame(read_response_frame()))
             {
                 uint32_t poll_tx_ts, resp_rx_ts, poll_rx_ts, resp_tx_ts;
-                int32_t rtd_init, rtd_resp;
-                float clockOffsetRatio ;
+                float clockOffsetRatio;
 
-                /* Retrieve poll transmission and response reception timestamps. See NOTE 9 below. */
-                poll_tx_ts = dwt_readtxtimestamplo32();
-                resp_rx_ts = dwt_readrxtimestamplo32();
-
-                /* Read carrier integrator value and calculate clock offset ratio. See NOTE 11 below. */
-                clockOffsetRatio = ((float)dwt_readclockoffset()) / (uint32_t)(1<<26);
+                read_timestamps(&poll_tx_ts, &resp_rx_ts, &clockOffsetRatio);
 
                 /* Get timestamps embedded in response message. */
                 resp_msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX], &poll_rx_ts);
                 resp_msg_get_ts(&rx_buffer[RESP_MSG_RESP_TX_TS_IDX], &resp_tx_ts);
 
-                /* Compute time of flight and distance, using clock offset ratio to correct for differing local and remote clock rates */
-                rtd_init = resp_rx_ts - poll_tx_ts;
-                rtd_resp = resp_tx_ts - poll_rx_ts;
-
-                tof = ((rtd_init - rtd_resp * (1 - clockOffsetRatio)) / 2.0) * DWT_TIME_UNITS;
-                distance = tof * SPEED_OF_LIGHT;
+                distance = calculate_distance(resp_rx_ts, poll_tx_ts, resp_tx_ts, poll_rx_ts, clockOffsetRatio);
 
                 /* Display computed distance on LCD. */
                 snprintf(dist_str, sizeof(dist_str), "DIST: %3.2f m", distance);
