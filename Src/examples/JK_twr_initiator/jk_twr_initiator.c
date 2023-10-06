@@ -80,7 +80,7 @@ static double distance;
  * temperature. These values can be calibrated prior to taking reference measurements. See NOTE 2 below. */
 extern dwt_txconfig_t txconfig_options;
 
-// initialise device hardware
+// initialises device hardware (SPI etc.)
 void device_init(void)
 {
     /* Print application name */
@@ -104,6 +104,7 @@ void device_init(void)
     }
 }
 
+// configures device settings (dwt_config_t), antenna delays, read and respond delays
 void device_config(void)
 {
     /* Enabling LEDs here for debug so that for each TX the D1 LED will flash on DW3000 red eval-shield boards. */
@@ -134,6 +135,7 @@ void device_config(void)
     dwt_setlnapamode(DWT_LNA_ENABLE | DWT_PA_ENABLE);
 }
 
+// sends poll message, for now it uses tx_poll_msg frame
 void transmit_poll_msg(void)
 {
     /* Write frame data to DW IC and prepare transmission. See NOTE 7 below. */
@@ -147,6 +149,7 @@ void transmit_poll_msg(void)
     dwt_starttx(DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED);
 }
 
+//  infinite loop untill response is recieved or timeout/error occurs
 void await_poll_response(void)
 {
     /* We assume that the transmission is achieved correctly, poll for reception of a frame or error/timeout. See NOTE 8 below. */
@@ -154,6 +157,7 @@ void await_poll_response(void)
     { };
 }
 
+// reads response frame into register  and returns its length
 uint32_t read_response_frame(void)
 {
     /* Clear good RX frame event in the DW IC status register. */
@@ -162,6 +166,7 @@ uint32_t read_response_frame(void)
     return dwt_read32bitreg(RX_FINFO_ID) & RXFLEN_MASK;
 }
 
+// validates response frame based on tis length and common part of the message
 bool validate_response_frame(uint32_t _frame_len)
 {
     if (_frame_len <= sizeof(rx_buffer))
@@ -186,6 +191,7 @@ bool validate_response_frame(uint32_t _frame_len)
     }
 }
 
+// reads timestamps from registers and calculates clock offset ratio
 void read_timestamps(uint32_t *poll_tx_ts, uint32_t *resp_rx_ts, float *clockOffsetRatio)
 {
     /* Retrieve poll transmission and response reception timestamps. See NOTE 9 below. */
@@ -196,6 +202,7 @@ void read_timestamps(uint32_t *poll_tx_ts, uint32_t *resp_rx_ts, float *clockOff
     *clockOffsetRatio = ((float)dwt_readclockoffset()) / (uint32_t)(1<<26);
 }
 
+// calculates distance based on passed in timestamps and clock offset ratio
 double calculate_distance(uint32_t resp_rx_ts, uint32_t poll_tx_ts, uint32_t resp_tx_ts, uint32_t poll_rx_ts, float clockOffsetRatio)
 {
     int32_t rtd_init, rtd_resp;
