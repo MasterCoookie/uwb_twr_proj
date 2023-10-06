@@ -67,25 +67,9 @@ static uint8_t rx_buffer[RX_BUF_LEN];
 static uint32_t status_reg = 0;
 
 /* Delay between frames, in UWB microseconds. See NOTE 1 below. */
-#ifdef RPI_BUILD
 #define POLL_TX_TO_RESP_RX_DLY_UUS 240
-#endif //RPI_BUILD
-#ifdef STM32F429xx
-#define POLL_TX_TO_RESP_RX_DLY_UUS 240
-#endif //STM32F429xx
-#ifdef NRF52840_XXAA
-#define POLL_TX_TO_RESP_RX_DLY_UUS 240
-#endif //NRF52840_XXAA
 /* Receive response timeout. See NOTE 5 below. */
-#ifdef RPI_BUILD
-#define RESP_RX_TIMEOUT_UUS 270
-#endif //RPI_BUILD
-#ifdef STM32F429xx
 #define RESP_RX_TIMEOUT_UUS 210
-#endif //STM32F429xx
-#ifdef NRF52840_XXAA
-#define RESP_RX_TIMEOUT_UUS 400
-#endif //NRF52840_XXAA
 
 /* Hold copies of computed time of flight and distance here for reference so that it can be examined at a debug breakpoint. */
 static double tof;
