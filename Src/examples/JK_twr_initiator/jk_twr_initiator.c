@@ -79,18 +79,10 @@ static double distance;
  * temperature. These values can be calibrated prior to taking reference measurements. See NOTE 2 below. */
 extern dwt_txconfig_t txconfig_options;
 
-/*! ------------------------------------------------------------------------------------------------------------------
- * @fn main()
- *
- * @brief Application entry point.
- *
- * @param  none
- *
- * @return none
- */
-int jk_twr_initiator(void)
+// initialise device hardware
+void device_init(void)
 {
-    /* Display application name on LCD. */
+    /* Print application name */
     test_run_info((unsigned char *)APP_NAME);
 
     /* Configure SPI rate, DW3000 supports up to 38 MHz */
@@ -109,7 +101,10 @@ int jk_twr_initiator(void)
         while (1)
         { };
     }
+}
 
+void device_config(void)
+{
     /* Enabling LEDs here for debug so that for each TX the D1 LED will flash on DW3000 red eval-shield boards. */
     dwt_setleds(DWT_LEDS_ENABLE | DWT_LEDS_INIT_BLINK) ;
 
@@ -136,6 +131,23 @@ int jk_twr_initiator(void)
     /* Next can enable TX/RX states output on GPIOs 5 and 6 to help debug, and also TX/RX LEDs
      * Note, in real low power applications the LEDs should not be used. */
     dwt_setlnapamode(DWT_LNA_ENABLE | DWT_PA_ENABLE);
+}
+
+/*! ------------------------------------------------------------------------------------------------------------------
+ * @fn main()
+ *
+ * @brief Application entry point.
+ *
+ * @param  none
+ *
+ * @return none
+ */
+int jk_twr_initiator(void)
+{
+    
+    device_init();
+
+    device_config();
 
     /* Loop forever initiating ranging exchanges. */
     while (1)
