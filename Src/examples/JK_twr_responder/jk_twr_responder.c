@@ -190,6 +190,16 @@ int send_response(void)
     return dwt_starttx(DWT_START_TX_DELAYED);
 }
 
+void await_response_sent(void)
+{
+    /* Poll DW IC until TX frame sent event set. See NOTE 6 below. */
+    while (!(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS_BIT_MASK))
+    { };
+
+    /* Clear TXFRS event. */
+    dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS_BIT_MASK);
+}
+
 /*! ------------------------------------------------------------------------------------------------------------------
  * @fn main()
  *
@@ -218,12 +228,7 @@ int jk_twr_responder(void)
 
                 if (send_response() == DWT_SUCCESS)
                 {
-                    /* Poll DW IC until TX frame sent event set. See NOTE 6 below. */
-                    while (!(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS_BIT_MASK))
-                    { };
-
-                    /* Clear TXFRS event. */
-                    dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS_BIT_MASK);
+                    await_response_sent();
 
                     /* Increment frame sequence number after transmission of the poll message (modulo 256). */
                     frame_seq_nb++;
