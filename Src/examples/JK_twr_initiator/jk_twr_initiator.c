@@ -13,6 +13,7 @@
 #include <shared_functions.h>
 #include <example_selection.h>
 #include <config_options.h>
+#include <stdbool.h>
 
 #if defined(JK_TWR_INITIATOR)
 
@@ -67,25 +68,9 @@ static uint8_t rx_buffer[RX_BUF_LEN];
 static uint32_t status_reg = 0;
 
 /* Delay between frames, in UWB microseconds. See NOTE 1 below. */
-#ifdef RPI_BUILD
 #define POLL_TX_TO_RESP_RX_DLY_UUS 240
-#endif //RPI_BUILD
-#ifdef STM32F429xx
-#define POLL_TX_TO_RESP_RX_DLY_UUS 240
-#endif //STM32F429xx
-#ifdef NRF52840_XXAA
-#define POLL_TX_TO_RESP_RX_DLY_UUS 240
-#endif //NRF52840_XXAA
 /* Receive response timeout. See NOTE 5 below. */
-#ifdef RPI_BUILD
-#define RESP_RX_TIMEOUT_UUS 270
-#endif //RPI_BUILD
-#ifdef STM32F429xx
 #define RESP_RX_TIMEOUT_UUS 210
-#endif //STM32F429xx
-#ifdef NRF52840_XXAA
-#define RESP_RX_TIMEOUT_UUS 400
-#endif //NRF52840_XXAA
 
 /* Hold copies of computed time of flight and distance here for reference so that it can be examined at a debug breakpoint. */
 static double tof;
@@ -95,18 +80,10 @@ static double distance;
  * temperature. These values can be calibrated prior to taking reference measurements. See NOTE 2 below. */
 extern dwt_txconfig_t txconfig_options;
 
-/*! ------------------------------------------------------------------------------------------------------------------
- * @fn main()
- *
- * @brief Application entry point.
- *
- * @param  none
- *
- * @return none
- */
-int jk_twr_initiator(void)
+// initialises device hardware (SPI etc.)
+void device_init(void)
 {
-    /* Display application name on LCD. */
+    /* Print application name */
     test_run_info((unsigned char *)APP_NAME);
 
     /* Configure SPI rate, DW3000 supports up to 38 MHz */
@@ -125,7 +102,11 @@ int jk_twr_initiator(void)
         while (1)
         { };
     }
+}
 
+// configures device settings (dwt_config_t), antenna delays, read and respond delays
+void device_config(void)
+{
     /* Enabling LEDs here for debug so that for each TX the D1 LED will flash on DW3000 red eval-shield boards. */
     dwt_setleds(DWT_LEDS_ENABLE | DWT_LEDS_INIT_BLINK) ;
 
@@ -152,72 +133,138 @@ int jk_twr_initiator(void)
     /* Next can enable TX/RX states output on GPIOs 5 and 6 to help debug, and also TX/RX LEDs
      * Note, in real low power applications the LEDs should not be used. */
     dwt_setlnapamode(DWT_LNA_ENABLE | DWT_PA_ENABLE);
+}
+
+// sends poll message, for now it uses tx_poll_msg frame
+void transmit_poll_msg(void)
+{
+    /* Write frame data to DW IC and prepare transmission. See NOTE 7 below. */
+    tx_poll_msg[ALL_MSG_SN_IDX] = frame_seq_nb;
+    dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS_BIT_MASK);
+    dwt_writetxdata(sizeof(tx_poll_msg), tx_poll_msg, 0); /* Zero offset in TX buffer. */
+    dwt_writetxfctrl(sizeof(tx_poll_msg), 0, 1); /* Zero offset in TX buffer, ranging. */
+
+    /* Start transmission, indicating that a response is expected so that reception is enabled automatically after the frame is sent and the delay
+     * set by dwt_setrxaftertxdelay() has elapsed. */
+    dwt_starttx(DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED);
+}
+
+//  infinite loop untill response is recieved or timeout/error occurs
+void await_poll_response(void)
+{
+    /* We assume that the transmission is achieved correctly, poll for reception of a frame or error/timeout. See NOTE 8 below. */
+    while (!((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) & (SYS_STATUS_RXFCG_BIT_MASK | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR)))
+    { };
+}
+
+// reads response frame into register  and returns its length
+uint32_t read_response_frame(void)
+{
+    /* Clear good RX frame event in the DW IC status register. */
+    dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_RXFCG_BIT_MASK);
+
+    return dwt_read32bitreg(RX_FINFO_ID) & RXFLEN_MASK;
+}
+
+// validates response frame based on tis length and common part of the message
+bool validate_response_frame(uint32_t _frame_len)
+{
+    if (_frame_len <= sizeof(rx_buffer))
+    {
+        dwt_readrxdata(rx_buffer, _frame_len, 0);
+
+        /* Check that the frame is the expected response from the companion "SS TWR responder" example.
+         * As the sequence number field of the frame is not relevant, it is cleared to simplify the validation of the frame. */
+        rx_buffer[ALL_MSG_SN_IDX] = 0;
+        if (memcmp(rx_buffer, rx_resp_msg, ALL_MSG_COMMON_LEN) == 0)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    else
+    {
+        return false;
+    }
+}
+
+// reads timestamps from registers and calculates clock offset ratio
+void read_timestamps(uint32_t *poll_tx_ts, uint32_t *resp_rx_ts, float *clockOffsetRatio)
+{
+    /* Retrieve poll transmission and response reception timestamps. See NOTE 9 below. */
+    *poll_tx_ts = dwt_readtxtimestamplo32();
+    *resp_rx_ts = dwt_readrxtimestamplo32();
+
+    /* Read carrier integrator value and calculate clock offset ratio. See NOTE 11 below. */
+    *clockOffsetRatio = ((float)dwt_readclockoffset()) / (uint32_t)(1<<26);
+}
+
+// calculates distance based on passed in timestamps and clock offset ratio
+double calculate_distance(uint32_t resp_rx_ts, uint32_t poll_tx_ts, uint32_t resp_tx_ts, uint32_t poll_rx_ts, float clockOffsetRatio)
+{
+    int32_t rtd_init, rtd_resp;
+
+    /* Compute time of flight and distance, using clock offset ratio to correct for differing local and remote clock rates */
+    rtd_init = resp_rx_ts - poll_tx_ts;
+    rtd_resp = resp_tx_ts - poll_rx_ts;
+
+    tof = ((rtd_init - rtd_resp * (1 - clockOffsetRatio)) / 2.0) * DWT_TIME_UNITS;
+    return tof * SPEED_OF_LIGHT;
+}
+
+/*! ------------------------------------------------------------------------------------------------------------------
+ * @fn main()
+ *
+ * @brief Application entry point.
+ *
+ * @param  none
+ *
+ * @return none
+ */
+int jk_twr_initiator(void)
+{
+    device_init();
+
+    device_config();
 
     /* Loop forever initiating ranging exchanges. */
     while (1)
     {
-    	test_run_info((unsigned char *)"JK");
-        /* Write frame data to DW IC and prepare transmission. See NOTE 7 below. */
-        tx_poll_msg[ALL_MSG_SN_IDX] = frame_seq_nb;
-        dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS_BIT_MASK);
-        dwt_writetxdata(sizeof(tx_poll_msg), tx_poll_msg, 0); /* Zero offset in TX buffer. */
-        dwt_writetxfctrl(sizeof(tx_poll_msg), 0, 1); /* Zero offset in TX buffer, ranging. */
+    	test_run_info((unsigned char *)"JK TWR Initiator");
+        // initiate ranging exchange by sending a poll message
+        transmit_poll_msg();
 
-        /* Start transmission, indicating that a response is expected so that reception is enabled automatically after the frame is sent and the delay
-         * set by dwt_setrxaftertxdelay() has elapsed. */
-        dwt_starttx(DWT_START_TX_IMMEDIATE | DWT_RESPONSE_EXPECTED);
-
-        /* We assume that the transmission is achieved correctly, poll for reception of a frame or error/timeout. See NOTE 8 below. */
-        while (!((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) & (SYS_STATUS_RXFCG_BIT_MASK | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR)))
-        { };
+        // wait for response/timeout
+        await_poll_response();
 
         /* Increment frame sequence number after transmission of the poll message (modulo 256). */
         frame_seq_nb++;
 
+        // check error register
         if (status_reg & SYS_STATUS_RXFCG_BIT_MASK)
         {
-            uint32_t frame_len;
-
-            /* Clear good RX frame event in the DW IC status register. */
-            dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_RXFCG_BIT_MASK);
-
-            /* A frame has been received, read it into the local buffer. */
-            frame_len = dwt_read32bitreg(RX_FINFO_ID) & RXFLEN_MASK;
-            if (frame_len <= sizeof(rx_buffer))
+            // read and validate recieved frame
+            if(validate_response_frame(read_response_frame()))
             {
-                dwt_readrxdata(rx_buffer, frame_len, 0);
+                uint32_t poll_tx_ts, resp_rx_ts, poll_rx_ts, resp_tx_ts;
+                float clockOffsetRatio;
+                
+                // read device timestamps (poll send timestamp and response recieved timestamp) and calculate clock offset ratio
+                read_timestamps(&poll_tx_ts, &resp_rx_ts, &clockOffsetRatio);
 
-                /* Check that the frame is the expected response from the companion "SS TWR responder" example.
-                 * As the sequence number field of the frame is not relevant, it is cleared to simplify the validation of the frame. */
-                rx_buffer[ALL_MSG_SN_IDX] = 0;
-                if (memcmp(rx_buffer, rx_resp_msg, ALL_MSG_COMMON_LEN) == 0)
-                {
-                    uint32_t poll_tx_ts, resp_rx_ts, poll_rx_ts, resp_tx_ts;
-                    int32_t rtd_init, rtd_resp;
-                    float clockOffsetRatio ;
+                /* Get timestamps embedded in response message. */
+                resp_msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX], &poll_rx_ts);
+                resp_msg_get_ts(&rx_buffer[RESP_MSG_RESP_TX_TS_IDX], &resp_tx_ts);
 
-                    /* Retrieve poll transmission and response reception timestamps. See NOTE 9 below. */
-                    poll_tx_ts = dwt_readtxtimestamplo32();
-                    resp_rx_ts = dwt_readrxtimestamplo32();
+                // calculate distance based on read and recieved timestamps
+                distance = calculate_distance(resp_rx_ts, poll_tx_ts, resp_tx_ts, poll_rx_ts, clockOffsetRatio);
 
-                    /* Read carrier integrator value and calculate clock offset ratio. See NOTE 11 below. */
-                    clockOffsetRatio = ((float)dwt_readclockoffset()) / (uint32_t)(1<<26);
-
-                    /* Get timestamps embedded in response message. */
-                    resp_msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX], &poll_rx_ts);
-                    resp_msg_get_ts(&rx_buffer[RESP_MSG_RESP_TX_TS_IDX], &resp_tx_ts);
-
-                    /* Compute time of flight and distance, using clock offset ratio to correct for differing local and remote clock rates */
-                    rtd_init = resp_rx_ts - poll_tx_ts;
-                    rtd_resp = resp_tx_ts - poll_rx_ts;
-
-                    tof = ((rtd_init - rtd_resp * (1 - clockOffsetRatio)) / 2.0) * DWT_TIME_UNITS;
-                    distance = tof * SPEED_OF_LIGHT;
-
-                    /* Display computed distance on LCD. */
-                    snprintf(dist_str, sizeof(dist_str), "DIST: %3.2f m", distance);
-                    test_run_info((unsigned char *)dist_str);
-                }
+                /* Display computed distance on LCD. */
+                snprintf(dist_str, sizeof(dist_str), "DIST: %3.2f m", distance);
+                test_run_info((unsigned char *)dist_str);
             }
         }
         else
