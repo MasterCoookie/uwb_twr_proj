@@ -201,6 +201,9 @@ void await_response_sent(void)
 
     /* Clear TXFRS event. */
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS_BIT_MASK);
+
+    /* Increment frame sequence number after transmission of the poll message (modulo 256). */
+    frame_seq_nb++;
 }
 
 /*! ------------------------------------------------------------------------------------------------------------------
@@ -232,9 +235,6 @@ int jk_twr_responder(void)
                 if (send_response() == DWT_SUCCESS)
                 {
                     await_response_sent();
-
-                    /* Increment frame sequence number after transmission of the poll message (modulo 256). */
-                    frame_seq_nb++;
                 }
             }
         }
