@@ -155,6 +155,9 @@ void await_poll_response(void)
     /* We assume that the transmission is achieved correctly, poll for reception of a frame or error/timeout. See NOTE 8 below. */
     while (!((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) & (SYS_STATUS_RXFCG_BIT_MASK | SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR)))
     { };
+
+    /* Increment frame sequence number after transmission of the poll message (modulo 256). */
+    frame_seq_nb++;
 }
 
 // reads response frame into register  and returns its length
@@ -238,9 +241,6 @@ int jk_twr_initiator(void)
 
         // wait for response/timeout
         await_poll_response();
-
-        /* Increment frame sequence number after transmission of the poll message (modulo 256). */
-        frame_seq_nb++;
 
         // check error register
         if (status_reg & SYS_STATUS_RXFCG_BIT_MASK)
