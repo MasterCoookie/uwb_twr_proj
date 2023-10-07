@@ -85,6 +85,7 @@ extern "C" {
 //#define TEST_FRAME_FILTERING_RX
 
 #define JK_TWR_INITIATOR
+//#define JK_TWR_RESPONDER
 
 #ifdef __cplusplus
 }

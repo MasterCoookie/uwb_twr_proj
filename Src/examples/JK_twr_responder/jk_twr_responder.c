@@ -11,12 +11,12 @@
 #include <example_selection.h>
 
 
-#if defined(TEST_SS_TWR_RESPONDER)
+#if defined(JK_TWR_RESPONDER)
 
 extern void test_run_info(unsigned char *data);
 
 /* Example application name */
-#define APP_NAME "SS TWR RESP v1.0"
+#define APP_NAME "JK TWR RESP v1.0"
 
 /* Default communication configuration. We use default non-STS DW mode. */
 static dwt_config_t config = {
@@ -61,15 +61,7 @@ static uint8_t rx_buffer[RX_BUF_LEN];
 static uint32_t status_reg = 0;
 
 /* Delay between frames, in UWB microseconds. See NOTE 1 below. */
-#ifdef RPI_BUILD
-#define POLL_RX_TO_RESP_TX_DLY_UUS 550
-#endif //RPI_BUILD
-#ifdef STM32F429xx
 #define POLL_RX_TO_RESP_TX_DLY_UUS 450
-#endif //STM32F429xx
-#ifdef NRF52840_XXAA
-#define POLL_RX_TO_RESP_TX_DLY_UUS 650
-#endif //NRF52840_XXAA
 
 /* Timestamps of frames transmission/reception. */
 static uint64_t poll_rx_ts;
@@ -79,16 +71,8 @@ static uint64_t resp_tx_ts;
  * temperature. These values can be calibrated prior to taking reference measurements. See NOTE 5 below. */
 extern dwt_txconfig_t txconfig_options;
 
-/*! ------------------------------------------------------------------------------------------------------------------
- * @fn main()
- *
- * @brief Application entry point.
- *
- * @param  none
- *
- * @return none
- */
-int ss_twr_responder(void)
+// TODO - move to common methods
+void device_init(void)
 {
     /* Display application name on LCD. */
     test_run_info((unsigned char *)APP_NAME);
@@ -109,7 +93,11 @@ int ss_twr_responder(void)
         while (1)
         { };
     }
+}
 
+// TODO - Potentially move to common methods
+void device_config(void)
+{
     /* Enabling LEDs here for debug so that for each TX the D1 LED will flash on DW3000 red eval-shield boards. */
     dwt_setleds(DWT_LEDS_ENABLE | DWT_LEDS_INIT_BLINK) ;
 
@@ -131,16 +119,37 @@ int ss_twr_responder(void)
     /* Next can enable TX/RX states output on GPIOs 5 and 6 to help debug, and also TX/RX LEDs
      * Note, in real low power applications the LEDs should not be used. */
     dwt_setlnapamode(DWT_LNA_ENABLE | DWT_PA_ENABLE);
+}
+
+void await_poll_msg(void)
+{
+    /* Activate reception immediately. */
+    dwt_rxenable(DWT_START_RX_IMMEDIATE);
+
+    /* Poll for reception of a frame or error/timeout. See NOTE 6 below. */
+    while (!((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) & (SYS_STATUS_RXFCG_BIT_MASK | SYS_STATUS_ALL_RX_ERR)))
+    { };
+}
+
+/*! ------------------------------------------------------------------------------------------------------------------
+ * @fn main()
+ *
+ * @brief Application entry point.
+ *
+ * @param  none
+ *
+ * @return none
+ */
+int jk_twr_responder(void)
+{
+    device_init();
+
+    device_config();
 
     /* Loop forever responding to ranging requests. */
     while (1)
     {
-        /* Activate reception immediately. */
-        dwt_rxenable(DWT_START_RX_IMMEDIATE);
-
-        /* Poll for reception of a frame or error/timeout. See NOTE 6 below. */
-        while (!((status_reg = dwt_read32bitreg(SYS_STATUS_ID)) & (SYS_STATUS_RXFCG_BIT_MASK | SYS_STATUS_ALL_RX_ERR)))
-        { };
+        await_poll_msg();
 
         if (status_reg & SYS_STATUS_RXFCG_BIT_MASK)
         {

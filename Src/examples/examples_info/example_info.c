@@ -357,6 +357,12 @@ void build_examples(void)
     example_pointer=jk_twr_initiator;
     test_cnt++;
 #endif
+#ifdef JK_TWR_RESPONDER
+    extern int jk_twr_responder(void);
+
+    example_pointer=jk_twr_responder;
+    test_cnt++;
+#endif
     //Check that only 1 test was enabled in test_selection.h file
     assert(test_cnt==1);
 

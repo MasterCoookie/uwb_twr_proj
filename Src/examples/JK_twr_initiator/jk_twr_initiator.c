@@ -233,7 +233,7 @@ int jk_twr_initiator(void)
     /* Loop forever initiating ranging exchanges. */
     while (1)
     {
-    	test_run_info((unsigned char *)"JK TWR Initiator");
+    	test_run_info((unsigned char *)APP_NAME);
         // initiate ranging exchange by sending a poll message
         transmit_poll_msg();
 
