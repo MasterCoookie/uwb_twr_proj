@@ -162,6 +162,7 @@ bool validate_poll_frame(uint32_t frame_len)
     }
 }
 
+// prepares response message in registers based on timestamps of recieved and transmitted messages
 void prepare_response(void)
 {
     uint32_t resp_tx_time;
@@ -181,6 +182,7 @@ void prepare_response(void)
     resp_msg_set_ts(&tx_resp_msg[RESP_MSG_RESP_TX_TS_IDX], resp_tx_ts);
 }
 
+// transmits prepared response message, returns failure if transmission is not successful
 int send_response(void)
 {
     /* Write and send the response message. See NOTE 9 below. */
@@ -190,6 +192,7 @@ int send_response(void)
     return dwt_starttx(DWT_START_TX_DELAYED);
 }
 
+// awaits untill response message is sent or timeout occurs
 void await_response_sent(void)
 {
     /* Poll DW IC until TX frame sent event set. See NOTE 6 below. */
