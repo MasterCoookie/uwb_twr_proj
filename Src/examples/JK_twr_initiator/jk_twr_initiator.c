@@ -47,8 +47,8 @@ static dwt_config_t config = {
 #define RX_ANT_DLY 16385
 
 /* Frames used in the ranging process. See NOTE 3 below. */
-static uint8_t tx_poll_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, 'A', 'A', 'B', 'B', 0xE0, 0, 0};
-static uint8_t rx_resp_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, 'B', 'B', 'A', 'A', 0xE1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static uint8_t tx_poll_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, '0', '0', 'B', 'B', 0xE0, 0, 0};
+static uint8_t rx_resp_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, 'B', 'B', '0', '0', 0xE1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 /* Length of the common part of the message (up to and including the function code, see NOTE 3 below). */
 #define ALL_MSG_COMMON_LEN 10
 /* Indexes to access some of the fields in the frames defined above. */
@@ -218,6 +218,14 @@ double calculate_distance(uint32_t resp_rx_ts, uint32_t poll_tx_ts, uint32_t res
     return tof * SPEED_OF_LIGHT;
 }
 
+void set_destenation_addr(char *addr)
+{
+    tx_poll_msg[5] = addr[0];
+    tx_poll_msg[6] = addr[1];
+    rx_resp_msg[7] = addr[0];
+    rx_resp_msg[8] = addr[1];
+}
+
 /*! ------------------------------------------------------------------------------------------------------------------
  * @fn main()
  *
@@ -236,6 +244,7 @@ int jk_twr_initiator(void)
     /* Loop forever initiating ranging exchanges. */
     while (1)
     {
+        set_destenation_addr("CC");
         // initiate ranging exchange by sending a poll message
         transmit_poll_msg();
 
