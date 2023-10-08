@@ -41,8 +41,8 @@ static dwt_config_t config = {
 #define RX_ANT_DLY 16385
 
 /* Frames used in the ranging process. See NOTE 3 below. */
-static uint8_t rx_poll_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, 'W', 'A', 'V', 'E', 0xE0, 0, 0};
-static uint8_t tx_resp_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, 'V', 'E', 'W', 'A', 0xE1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static uint8_t rx_poll_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, '0', '0', 'B', 'B', 0xE0, 0, 0};
+static uint8_t tx_resp_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, '0', '0', '0', '0', 0xE1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 /* Length of the common part of the message (up to and including the function code, see NOTE 3 below). */
 #define ALL_MSG_COMMON_LEN 10
 /* Index to access some of the fields in the frames involved in the process. */
@@ -138,16 +138,22 @@ uint32_t read_poll_frame(void)
     /* Clear good RX frame event in the DW IC status register. */
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_RXFCG_BIT_MASK);
 
-    return dwt_read32bitreg(RX_FINFO_ID) & RXFLEN_MASK;
+    uint32_t frame_len;
+
+    frame_len = dwt_read32bitreg(RX_FINFO_ID) & RXFLEN_MASK;
+    dwt_readrxdata(rx_buffer, frame_len, 0);
+    return frame_len;
 }
 
+// checks if poll frame meets matches expected frame (dont care about sender address)
 bool validate_poll_frame(uint32_t frame_len)
 {
-    dwt_readrxdata(rx_buffer, frame_len, 0);
     if (frame_len <= sizeof(rx_buffer))
     {
         rx_buffer[ALL_MSG_SN_IDX] = 0;
-        if (memcmp(rx_buffer, rx_poll_msg, ALL_MSG_COMMON_LEN) == 0)
+        if (memcmp(rx_buffer, rx_poll_msg, ALL_MSG_COMMON_LEN - 4) == 0
+            && rx_poll_msg[ALL_MSG_COMMON_LEN - 1] == rx_buffer[ALL_MSG_COMMON_LEN - 1]
+        )
         {
             return true;
         }
@@ -162,10 +168,29 @@ bool validate_poll_frame(uint32_t frame_len)
     }
 }
 
+// sets destination address in response message, used in prepare_response, dont care about source address, we accept all from our network
+void set_destenation_addr(char addr_1, char addr_2)
+{
+    tx_resp_msg[5] = addr_1;
+    tx_resp_msg[6] = addr_2;
+}
+
+// sets own address in response message, used at startup
+void set_own_addr(char *addr)
+{
+    rx_poll_msg[5] = addr[0];
+    rx_poll_msg[6] = addr[1];
+    tx_resp_msg[7] = addr[0];
+    tx_resp_msg[8] = addr[1];
+}
+
 // prepares response message in registers based on timestamps of recieved and transmitted messages
 void prepare_response(void)
 {
     uint32_t resp_tx_time;
+
+    // set response recepient as poll sender
+    set_destenation_addr((char)rx_buffer[7], (char)rx_buffer[8]);
 
     /* Retrieve poll reception timestamp. */
     poll_rx_ts = get_rx_timestamp_u64();
@@ -217,9 +242,11 @@ void await_response_sent(void)
  */
 int jk_twr_responder(void)
 {
+    // setup device
     device_init();
-
     device_config();
+
+    set_own_addr("AA");
 
     /* Loop forever responding to ranging requests. */
     while (1)
