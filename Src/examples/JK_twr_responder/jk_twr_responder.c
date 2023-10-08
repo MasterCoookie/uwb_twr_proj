@@ -145,6 +145,7 @@ uint32_t read_poll_frame(void)
     return frame_len;
 }
 
+// checks if poll frame meets matches expected frame (dont care about sender address)
 bool validate_poll_frame(uint32_t frame_len)
 {
     if (frame_len <= sizeof(rx_buffer))
@@ -167,12 +168,14 @@ bool validate_poll_frame(uint32_t frame_len)
     }
 }
 
+// sets destination address in response message, used in prepare_response, dont care about source address, we accept all from our network
 void set_destenation_addr(char addr_1, char addr_2)
 {
     tx_resp_msg[5] = addr_1;
     tx_resp_msg[6] = addr_2;
 }
 
+// sets own address in response message, used at startup
 void set_own_addr(char *addr)
 {
     rx_poll_msg[5] = addr[0];
@@ -239,8 +242,8 @@ void await_response_sent(void)
  */
 int jk_twr_responder(void)
 {
+    // setup device
     device_init();
-
     device_config();
 
     set_own_addr("AA");
