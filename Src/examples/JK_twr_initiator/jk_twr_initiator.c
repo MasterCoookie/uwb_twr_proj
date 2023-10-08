@@ -226,6 +226,14 @@ void set_destenation_addr(char *addr)
     rx_resp_msg[8] = addr[1];
 }
 
+void set_own_addr(char *addr)
+{
+    tx_poll_msg[7] = addr[0];
+    tx_poll_msg[8] = addr[1];
+    rx_resp_msg[5] = addr[0];
+    rx_resp_msg[6] = addr[1];
+}
+
 /*! ------------------------------------------------------------------------------------------------------------------
  * @fn main()
  *
@@ -244,7 +252,8 @@ int jk_twr_initiator(void)
     /* Loop forever initiating ranging exchanges. */
     while (1)
     {
-        set_destenation_addr("CC");
+        set_own_addr("BB");
+        set_destenation_addr("AA");
         // initiate ranging exchange by sending a poll message
         transmit_poll_msg();
 
