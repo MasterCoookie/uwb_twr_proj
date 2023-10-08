@@ -41,8 +41,8 @@ static dwt_config_t config = {
 #define RX_ANT_DLY 16385
 
 /* Frames used in the ranging process. See NOTE 3 below. */
-static uint8_t rx_poll_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, 'W', 'A', 'V', 'E', 0xE0, 0, 0};
-static uint8_t tx_resp_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, 'V', 'E', 'W', 'A', 0xE1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static uint8_t rx_poll_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, 'A', 'A', 'B', 'B', 0xE0, 0, 0};
+static uint8_t tx_resp_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, 'B', 'B', 'A', 'A', 0xE1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 /* Length of the common part of the message (up to and including the function code, see NOTE 3 below). */
 #define ALL_MSG_COMMON_LEN 10
 /* Index to access some of the fields in the frames involved in the process. */
@@ -138,12 +138,15 @@ uint32_t read_poll_frame(void)
     /* Clear good RX frame event in the DW IC status register. */
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_RXFCG_BIT_MASK);
 
-    return dwt_read32bitreg(RX_FINFO_ID) & RXFLEN_MASK;
+    uint32_t frame_len;
+
+    frame_len = dwt_read32bitreg(RX_FINFO_ID) & RXFLEN_MASK;
+    dwt_readrxdata(rx_buffer, frame_len, 0);
+    return frame_len;
 }
 
 bool validate_poll_frame(uint32_t frame_len)
 {
-    dwt_readrxdata(rx_buffer, frame_len, 0);
     if (frame_len <= sizeof(rx_buffer))
     {
         rx_buffer[ALL_MSG_SN_IDX] = 0;
