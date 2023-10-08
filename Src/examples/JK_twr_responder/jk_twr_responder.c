@@ -41,8 +41,8 @@ static dwt_config_t config = {
 #define RX_ANT_DLY 16385
 
 /* Frames used in the ranging process. See NOTE 3 below. */
-static uint8_t rx_poll_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, 'A', 'A', 'B', 'B', 0xE0, 0, 0};
-static uint8_t tx_resp_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, 'B', 'B', 'A', 'A', 0xE1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static uint8_t rx_poll_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, '0', '0', 'B', 'B', 0xE0, 0, 0};
+static uint8_t tx_resp_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, '0', '0', '0', '0', 0xE1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 /* Length of the common part of the message (up to and including the function code, see NOTE 3 below). */
 #define ALL_MSG_COMMON_LEN 10
 /* Index to access some of the fields in the frames involved in the process. */
@@ -165,10 +165,27 @@ bool validate_poll_frame(uint32_t frame_len)
     }
 }
 
+void set_destenation_addr(char addr_1, char addr_2)
+{
+    tx_resp_msg[5] = addr_1;
+    tx_resp_msg[6] = addr_2;
+}
+
+void set_own_addr(char *addr)
+{
+    rx_poll_msg[5] = addr[0];
+    rx_poll_msg[6] = addr[1];
+    tx_resp_msg[7] = addr[0];
+    tx_resp_msg[8] = addr[1];
+}
+
 // prepares response message in registers based on timestamps of recieved and transmitted messages
 void prepare_response(void)
 {
     uint32_t resp_tx_time;
+
+    // set response recepient as poll sender
+    set_destenation_addr((char)rx_buffer[7], (char)rx_buffer[8]);
 
     /* Retrieve poll reception timestamp. */
     poll_rx_ts = get_rx_timestamp_u64();
@@ -223,6 +240,8 @@ int jk_twr_responder(void)
     device_init();
 
     device_config();
+
+    set_own_addr("AA");
 
     /* Loop forever responding to ranging requests. */
     while (1)
