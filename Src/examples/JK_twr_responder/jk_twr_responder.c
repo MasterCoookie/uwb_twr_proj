@@ -150,7 +150,9 @@ bool validate_poll_frame(uint32_t frame_len)
     if (frame_len <= sizeof(rx_buffer))
     {
         rx_buffer[ALL_MSG_SN_IDX] = 0;
-        if (memcmp(rx_buffer, rx_poll_msg, ALL_MSG_COMMON_LEN) == 0)
+        if (memcmp(rx_buffer, rx_poll_msg, ALL_MSG_COMMON_LEN - 4) == 0
+            && rx_poll_msg[ALL_MSG_COMMON_LEN - 1] == rx_buffer[ALL_MSG_COMMON_LEN - 1]
+        )
         {
             return true;
         }
