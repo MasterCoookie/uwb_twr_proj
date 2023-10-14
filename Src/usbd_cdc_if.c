@@ -10,7 +10,7 @@
   * inserted by the user or by software development tools
   * are owned by their respective copyright owners.
   *
-  * Copyright (c) 2019 STMicroelectronics International N.V. 
+  * Copyright (c) 2023 STMicroelectronics International N.V. 
   * All rights reserved.
   *
   * Redistribution and use in source and binary forms, with or without 
@@ -210,8 +210,6 @@ static int8_t CDC_DeInit_FS(void)
   */
 static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 {
-  UNUSED(length);
-  UNUSED(pbuf);
   /* USER CODE BEGIN 5 */
   switch(cmd)
   {
@@ -271,6 +269,12 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
   default:
     break;
   }
+  if(pbuf) {
+
+  }
+  if(length){
+
+  }
 
   return (USBD_OK);
   /* USER CODE END 5 */
@@ -292,10 +296,12 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
   */
 static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
-  UNUSED(Len);
   /* USER CODE BEGIN 6 */
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+  if(Len){
+
+  }
   return (USBD_OK);
   /* USER CODE END 6 */
 }

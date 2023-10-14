@@ -19,6 +19,7 @@
 
 extern void test_run_info(unsigned char *data);
 
+
 /* Example application name */
 #define APP_NAME "JK TWR INIT v1.0"
 

@@ -10,7 +10,7 @@
   * inserted by the user or by software development tools
   * are owned by their respective copyright owners.
   *
-  * Copyright (c) 2019 STMicroelectronics International N.V. 
+  * Copyright (c) 2023 STMicroelectronics International N.V. 
   * All rights reserved.
   *
   * Redistribution and use in source and binary forms, with or without 
@@ -47,12 +47,12 @@
   ******************************************************************************
   */
 /* Includes ------------------------------------------------------------------*/
-#include <main.h>
-#include <stm32f4xx_hal.h>
-#include <usb_device.h>
-#include <port.h>
+#include "main.h"
+#include "stm32f4xx_hal.h"
+#include "lwip.h"
+#include "usb_device.h"
 #include "examples_defines.h"
-
+#include <port.h>
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
@@ -84,31 +84,10 @@ static void MX_RNG_Init(void);
 static void MX_NVIC_Init(void);
 
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
-
 extern example_ptr example_pointer;
 
 extern int unit_test_main(void);
-extern uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len);
-
-/*! ------------------------------------------------------------------------------------------------------------------
-* @fn test_run_info()
-*
-* @brief  This gets run info from a test and sends it through virtual COM port.
-*
-* @param data - Message data, this data should be NULL string.
-*
-* output parameters
-*
-* no return value
-*/
-void test_run_info(unsigned char *data)
-{
-    uint16_t    data_length;
-
-    data_length=strlen((const char *)data);
-    CDC_Transmit_FS(data, data_length);/*Transmit the data through USB - Virtual port*/
-    CDC_Transmit_FS((uint8_t*)"\n\r", 2);/*Transmit end of line through USB - Virtual port*/
-}
+                                
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -124,6 +103,11 @@ void test_run_info(unsigned char *data)
   *
   * @retval None
   */
+void test_run_info(unsigned char *data)
+{
+    printf("%s\n", data);
+}
+
 int main(void)
 {
   /* USER CODE BEGIN 1 */
@@ -133,8 +117,7 @@ int main(void)
   /* MCU Configuration----------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-
-  build_examples();
+	build_examples();
   HAL_Init();
 
   /* USER CODE BEGIN Init */
@@ -151,7 +134,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-  //MX_LWIP_Init();
+  MX_LWIP_Init();
   MX_TIM1_Init();
   MX_USART3_UART_Init();
   MX_USB_DEVICE_Init();
@@ -395,7 +378,7 @@ static void MX_USART3_UART_Init(void)
   huart3.Init.WordLength = UART_WORDLENGTH_8B;
   huart3.Init.StopBits = UART_STOPBITS_1;
   huart3.Init.Parity = UART_PARITY_NONE;
-  huart3.Init.Mode = UART_MODE_TX;
+  huart3.Init.Mode = UART_MODE_TX_RX;
   huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart3.Init.OverSampling = UART_OVERSAMPLING_16;
   if (HAL_UART_Init(&huart3) != HAL_OK)
@@ -508,7 +491,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(USB_OverCurrent_GPIO_Port, &GPIO_InitStruct);
 
-  /* This pin is used for time measuring. Connect this pin to scope and change it from low-high-low to measure time */
   /*Configure GPIO pin : DW_MEAS_TIME_Pin */
   GPIO_InitStruct.Pin = DW_MEAS_TIME_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -551,8 +533,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   */
 void _Error_Handler(char *file, int line)
 {
-  UNUSED(file);
-  UNUSED(line);
+	if(file){
+
+	}
+	if(line) {
+
+	}
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   while(1)
