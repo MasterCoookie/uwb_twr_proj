@@ -14,6 +14,7 @@
 #include <example_selection.h>
 #include <config_options.h>
 #include <stdbool.h>
+#include <lwip.h>
 
 #if defined(JK_TWR_INITIATOR)
 
@@ -80,6 +81,7 @@ static double distance;
 /* Values for the PG_DELAY and TX_POWER registers reflect the bandwidth and power of the spectrum at the current
  * temperature. These values can be calibrated prior to taking reference measurements. See NOTE 2 below. */
 extern dwt_txconfig_t txconfig_options;
+extern struct netif gnetif;
 
 // initialises device hardware (SPI etc.)
 void device_init(void)
@@ -250,9 +252,11 @@ int jk_twr_initiator(void)
 
     device_config();
 
+
     /* Loop forever initiating ranging exchanges. */
     while (1)
     {
+    	MX_LWIP_Process();
         set_own_addr("BB");
         set_destenation_addr("AA");
         // initiate ranging exchange by sending a poll message

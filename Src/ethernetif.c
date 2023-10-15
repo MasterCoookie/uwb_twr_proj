@@ -336,9 +336,7 @@ static err_t low_level_output(struct netif *netif, struct pbuf *p)
   uint32_t payloadoffset = 0;
   DmaTxDesc = heth.TxDesc;
   bufferoffset = 0;
-  if(netif) {
-
-  }
+  UNUSED(netif);
   
   /* copy frame from pbufs to driver buffers */
   for(q = p; q != NULL; q = q->next)
@@ -413,10 +411,6 @@ error:
    */
 static struct pbuf * low_level_input(struct netif *netif)
 {
-	if(netif)
-	{
-
-	}
   struct pbuf *p = NULL;
   struct pbuf *q = NULL;
   uint16_t len = 0;
@@ -426,7 +420,7 @@ static struct pbuf * low_level_input(struct netif *netif)
   uint32_t payloadoffset = 0;
   uint32_t byteslefttocopy = 0;
   uint32_t i=0;
-  
+  UNUSED(netif);
 
   /* get received frame */
   if (HAL_ETH_GetReceivedFrame(&heth) != HAL_OK)
