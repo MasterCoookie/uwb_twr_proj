@@ -51,8 +51,8 @@
 #include "stm32f4xx_hal.h"
 #include "lwip.h"
 #include "usb_device.h"
-#include "examples_defines.h"
 #include <port.h>
+#include "examples_defines.h"
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
@@ -87,6 +87,7 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 extern example_ptr example_pointer;
 
 extern int unit_test_main(void);
+extern uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len);
                                 
 
 /* USER CODE BEGIN PFP */
@@ -105,7 +106,11 @@ extern int unit_test_main(void);
   */
 void test_run_info(unsigned char *data)
 {
-    printf("%s\n", data);
+    uint16_t    data_length;
+
+    data_length=strlen((const char *)data);
+    CDC_Transmit_FS(data, data_length);/*Transmit the data through USB - Virtual port*/
+    CDC_Transmit_FS((uint8_t*)"\n\r", 2);/*Transmit end of line through USB - Virtual port*/
 }
 
 int main(void)
@@ -134,7 +139,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-  MX_LWIP_Init();
+   MX_LWIP_Init();
   MX_TIM1_Init();
   MX_USART3_UART_Init();
   MX_USB_DEVICE_Init();
@@ -533,12 +538,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   */
 void _Error_Handler(char *file, int line)
 {
-	if(file){
-
-	}
-	if(line) {
-
-	}
+	UNUSED(file);
+	UNUSED(line);
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   while(1)

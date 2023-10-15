@@ -1259,9 +1259,11 @@ PCD_StateTypeDef HAL_PCD_GetState(PCD_HandleTypeDef *hpcd)
   */
 static HAL_StatusTypeDef PCD_WriteEmptyTxFifo(PCD_HandleTypeDef *hpcd, uint32_t epnum)
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-compare"
   USB_OTG_GlobalTypeDef *USBx = hpcd->Instance;  
   USB_OTG_EPTypeDef *ep;
-  uint32_t len = 0U;
+  int32_t len = 0U;
   uint32_t len32b;
   uint32_t fifoemptymsk = 0U;
 
@@ -1303,6 +1305,7 @@ static HAL_StatusTypeDef PCD_WriteEmptyTxFifo(PCD_HandleTypeDef *hpcd, uint32_t 
   }
   
   return HAL_OK;  
+#pragma GCC diagnostic pop
 }
 
 /**

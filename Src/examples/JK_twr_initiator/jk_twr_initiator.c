@@ -253,7 +253,7 @@ int jk_twr_initiator(void)
     /* Loop forever initiating ranging exchanges. */
     while (1)
     {
-        set_own_addr("CC");
+        set_own_addr("BB");
         set_destenation_addr("AA");
         // initiate ranging exchange by sending a poll message
         transmit_poll_msg();

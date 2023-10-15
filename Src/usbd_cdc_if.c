@@ -269,12 +269,8 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
   default:
     break;
   }
-  if(pbuf) {
-
-  }
-  if(length){
-
-  }
+  UNUSED(pbuf);
+	UNUSED(length);
 
   return (USBD_OK);
   /* USER CODE END 5 */
@@ -299,9 +295,7 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
   /* USER CODE BEGIN 6 */
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
-  if(Len){
-
-  }
+  UNUSED(Len);
   return (USBD_OK);
   /* USER CODE END 6 */
 }
