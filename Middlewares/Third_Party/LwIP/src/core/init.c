@@ -364,7 +364,7 @@ lwip_init(void)
   raw_init();
 #endif /* LWIP_RAW */
 #if LWIP_UDP
-  udp_init();
+  // udp_init();
 #endif /* LWIP_UDP */
 #if LWIP_TCP
   tcp_init();

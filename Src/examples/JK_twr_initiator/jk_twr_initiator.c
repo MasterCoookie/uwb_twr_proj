@@ -20,7 +20,7 @@
 
 extern void test_run_info(unsigned char *data);
 
-
+#define MESURE_DIST 0
 /* Example application name */
 #define APP_NAME "JK TWR INIT v1.0"
 
@@ -257,46 +257,48 @@ int jk_twr_initiator(void)
     while (1)
     {
     	MX_LWIP_Process();
-        set_own_addr("BB");
-        set_destenation_addr("AA");
-        // initiate ranging exchange by sending a poll message
-        transmit_poll_msg();
+        if(MESURE_DIST) {
+            set_own_addr("BB");
+            set_destenation_addr("AA");
+            // initiate ranging exchange by sending a poll message
+            transmit_poll_msg();
 
-        // wait for response/timeout
-        await_poll_response();
+            // wait for response/timeout
+            await_poll_response();
 
-        // check error register
-        if (status_reg & SYS_STATUS_RXFCG_BIT_MASK)
-        {
-            // read and validate recieved frame
-            if(validate_response_frame(read_response_frame()))
+            // check error register
+            if (status_reg & SYS_STATUS_RXFCG_BIT_MASK)
             {
-                uint32_t poll_tx_ts, resp_rx_ts, poll_rx_ts, resp_tx_ts;
-                float clockOffsetRatio;
-                
-                // read device timestamps (poll send timestamp and response recieved timestamp) and calculate clock offset ratio
-                read_timestamps(&poll_tx_ts, &resp_rx_ts, &clockOffsetRatio);
+                // read and validate recieved frame
+                if(validate_response_frame(read_response_frame()))
+                {
+                    uint32_t poll_tx_ts, resp_rx_ts, poll_rx_ts, resp_tx_ts;
+                    float clockOffsetRatio;
+                    
+                    // read device timestamps (poll send timestamp and response recieved timestamp) and calculate clock offset ratio
+                    read_timestamps(&poll_tx_ts, &resp_rx_ts, &clockOffsetRatio);
 
-                /* Get timestamps embedded in response message. */
-                resp_msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX], &poll_rx_ts);
-                resp_msg_get_ts(&rx_buffer[RESP_MSG_RESP_TX_TS_IDX], &resp_tx_ts);
+                    /* Get timestamps embedded in response message. */
+                    resp_msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX], &poll_rx_ts);
+                    resp_msg_get_ts(&rx_buffer[RESP_MSG_RESP_TX_TS_IDX], &resp_tx_ts);
 
-                // calculate distance based on read and recieved timestamps
-                distance = calculate_distance(resp_rx_ts, poll_tx_ts, resp_tx_ts, poll_rx_ts, clockOffsetRatio);
+                    // calculate distance based on read and recieved timestamps
+                    distance = calculate_distance(resp_rx_ts, poll_tx_ts, resp_tx_ts, poll_rx_ts, clockOffsetRatio);
 
-                /* Display computed distance on LCD. */
-                snprintf(dist_str, sizeof(dist_str), "DIST: %3.2f m", distance);
-                test_run_info((unsigned char *)dist_str);
+                    /* Display computed distance on LCD. */
+                    snprintf(dist_str, sizeof(dist_str), "DIST: %3.2f m", distance);
+                    test_run_info((unsigned char *)dist_str);
+                }
             }
-        }
-        else
-        {
-            /* Clear RX error/timeout events in the DW IC status register. */
-            dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR);
-        }
+            else
+            {
+                /* Clear RX error/timeout events in the DW IC status register. */
+                dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR);
+            }
 
-        /* Execute a delay between ranging exchanges. */
-        Sleep(RNG_DELAY_MS);
+            /* Execute a delay between ranging exchanges. */
+            Sleep(RNG_DELAY_MS);
+        }
 
     }
 }

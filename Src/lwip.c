@@ -77,6 +77,42 @@ uint8_t NETMASK_ADDRESS[4];
 uint8_t GATEWAY_ADDRESS[4];
 
 /* USER CODE BEGIN 2 */
+struct udp_pcb *upcb;
+void udp_receive_callback(void *arg, struct udp_pcb *upcb, struct pbuf *p, const ip_addr_t *addr, u16_t port)
+{
+	struct pbuf *txBuf;
+
+	/* Get the IP of the Client */
+	char *remoteIP = ipaddr_ntoa(addr);
+
+	char buf[100];
+
+  UNUSED(arg);
+  UNUSED(remoteIP);
+
+	int len = sprintf (buf,"Wyslales %s. Malo to  istotne, bo PiS przejebal wybory  :)", (char*)p->payload);
+
+	/* allocate pbuf from RAM*/
+	txBuf = pbuf_alloc(PBUF_TRANSPORT,len, PBUF_RAM);
+
+	/* copy the data into the buffer  */
+	pbuf_take(txBuf, buf, len);
+
+	/* Connect to the remote client */
+	udp_connect(upcb, addr, port);
+
+	/* Send a Reply to the Client */
+	udp_send(upcb, txBuf);
+
+	/* free the UDP connection, so we can accept new clients */
+	udp_disconnect(upcb);
+
+	/* Free the p_tx buffer */
+	pbuf_free(txBuf);
+
+	/* Free the p buffer */
+	pbuf_free(p);
+}
 
 /* USER CODE END 2 */
 
@@ -89,7 +125,7 @@ void MX_LWIP_Init(void)
   IP_ADDRESS[0] = 192;
   IP_ADDRESS[1] = 168;
   IP_ADDRESS[2] = 0;
-  IP_ADDRESS[3] = 111;
+  IP_ADDRESS[3] = 112;
   NETMASK_ADDRESS[0] = 255;
   NETMASK_ADDRESS[1] = 255;
   NETMASK_ADDRESS[2] = 255;
@@ -97,7 +133,7 @@ void MX_LWIP_Init(void)
   GATEWAY_ADDRESS[0] = 192;
   GATEWAY_ADDRESS[1] = 168;
   GATEWAY_ADDRESS[2] = 0;
-  GATEWAY_ADDRESS[3] = 1;
+  GATEWAY_ADDRESS[3] = 112;
   
   /* Initilialize the LwIP stack without RTOS */
   lwip_init();
@@ -106,6 +142,20 @@ void MX_LWIP_Init(void)
   IP4_ADDR(&ipaddr, IP_ADDRESS[0], IP_ADDRESS[1], IP_ADDRESS[2], IP_ADDRESS[3]);
   IP4_ADDR(&netmask, NETMASK_ADDRESS[0], NETMASK_ADDRESS[1] , NETMASK_ADDRESS[2], NETMASK_ADDRESS[3]);
   IP4_ADDR(&gw, GATEWAY_ADDRESS[0], GATEWAY_ADDRESS[1], GATEWAY_ADDRESS[2], GATEWAY_ADDRESS[3]);
+  
+  upcb = udp_new();
+
+  err_t err = udp_bind(upcb, &ipaddr, 7);  // 7 is the server UDP port
+
+   /* 3. Set a receive callback for the upcb */
+  if(err == ERR_OK)
+  {
+    udp_recv(upcb, udp_receive_callback, NULL);
+  }
+  else
+  {
+    udp_remove(upcb);
+  }
 
   /* add the network interface (IPv4/IPv6) without RTOS */
   netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init, &ethernet_input);
