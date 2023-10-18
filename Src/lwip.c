@@ -110,13 +110,40 @@ void udp_receive_callback(void *arg, struct udp_pcb *upcb, struct pbuf *p, const
 	udp_send(upcb, txBuf);
 
 	/* free the UDP connection, so we can accept new clients */
-	udp_disconnect(upcb);
+	// udp_disconnect(upcb);
 
 	/* Free the p_tx buffer */
 	pbuf_free(txBuf);
 
 	/* Free the p buffer */
 	pbuf_free(p);
+}
+
+void udp_send_msg_connected(char *msg, int disconnect)
+{
+  struct pbuf *txBuf;
+
+  char buf[100];
+
+  int len = sprintf(buf, "%s", msg);
+
+  /* allocate pbuf from RAM*/
+  txBuf = pbuf_alloc(PBUF_TRANSPORT,len, PBUF_RAM);
+
+  /* copy the data into the buffer  */
+  pbuf_take(txBuf, buf, len);
+
+  /* Send a Reply to the Client */
+  udp_send(upcb, txBuf);
+
+  /* Free the p_tx buffer */
+  pbuf_free(txBuf);
+
+  if(disconnect)
+  {
+    /* free the UDP connection, so we can accept new clients */
+    udp_disconnect(upcb);
+  }
 }
 
 /* USER CODE END 2 */
