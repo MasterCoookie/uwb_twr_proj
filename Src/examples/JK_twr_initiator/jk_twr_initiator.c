@@ -83,6 +83,10 @@ static double distance;
 extern dwt_txconfig_t txconfig_options;
 extern struct netif gnetif;
 
+extern char* responder_addr;
+extern char* initiator_addr;
+extern int mesure_distance;
+
 // initialises device hardware (SPI etc.)
 void device_init(void)
 {

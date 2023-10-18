@@ -64,7 +64,9 @@
 void _Error_Handler(char * file, int line);
 
 /* USER CODE BEGIN 1 */
-
+struct udp_pcb *upcb;
+extern char* responder_addr;
+extern int mesure_distance;
 /* USER CODE END 1 */
 
 /* Variables Initialization */
@@ -77,7 +79,7 @@ uint8_t NETMASK_ADDRESS[4];
 uint8_t GATEWAY_ADDRESS[4];
 
 /* USER CODE BEGIN 2 */
-struct udp_pcb *upcb;
+
 void udp_receive_callback(void *arg, struct udp_pcb *upcb, struct pbuf *p, const ip_addr_t *addr, u16_t port)
 {
 	struct pbuf *txBuf;
@@ -90,7 +92,8 @@ void udp_receive_callback(void *arg, struct udp_pcb *upcb, struct pbuf *p, const
   UNUSED(arg);
   UNUSED(remoteIP);
 
-	int len = sprintf (buf,"Wyslales %s. Malo to  istotne, bo PiS przejebal wybory  :)", (char*)p->payload);
+	// int len = sprintf(buf,"Wyslales %s. Malo to  istotne, bo PiS przejebal wybory :)", (char*)p->payload);
+  int len = sprintf(buf, "TWR initialized with %s", responder_addr);
 
 	/* allocate pbuf from RAM*/
 	txBuf = pbuf_alloc(PBUF_TRANSPORT,len, PBUF_RAM);

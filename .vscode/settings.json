@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "*.ejs": "html",
-        "examples_defines.h": "c"
+        "examples_defines.h": "c",
+        "lwip.h": "c"
     }
 }

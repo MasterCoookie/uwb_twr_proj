@@ -96,7 +96,9 @@ extern uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-
+char* responder_addr = "00";
+char* initiator_addr = "AA";
+int mesure_distance = 0;
 /* USER CODE END 0 */
 
 /**
