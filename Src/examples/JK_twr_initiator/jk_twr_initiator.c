@@ -261,9 +261,9 @@ int jk_twr_initiator(void)
     while (1)
     {
     	MX_LWIP_Process();
-        if(MESURE_DIST) {
+        if(mesure_distance) {
             set_own_addr("BB");
-            set_destenation_addr("AA");
+            set_destenation_addr(responder_addr);
             // initiate ranging exchange by sending a poll message
             transmit_poll_msg();
 
@@ -298,10 +298,12 @@ int jk_twr_initiator(void)
             {
                 /* Clear RX error/timeout events in the DW IC status register. */
                 dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR);
+                
             }
 
             /* Execute a delay between ranging exchanges. */
-            Sleep(RNG_DELAY_MS);
+            // Sleep(RNG_DELAY_MS);
+            mesure_distance = 0;
         }
 
     }
