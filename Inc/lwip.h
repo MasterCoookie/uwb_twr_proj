@@ -87,6 +87,7 @@ void MX_LWIP_Init(void);
  *   - Handle timeouts if NO_SYS_NO_TIMERS not set
  */ 
 void MX_LWIP_Process(void);
+void udp_send_msg_connected(char *msg, int disconnect);
 
 /* USER CODE END 1 */
 #endif /* WITH_RTOS */

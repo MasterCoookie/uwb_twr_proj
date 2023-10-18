@@ -291,7 +291,8 @@ int jk_twr_initiator(void)
 
                     /* Display computed distance on LCD. */
                     snprintf(dist_str, sizeof(dist_str), "DIST: %3.2f m", distance);
-                    test_run_info((unsigned char *)dist_str);
+                    // test_run_info((unsigned char *)dist_str);
+                    udp_send_msg_connected(dist_str, 1);
                 }
             }
             else
