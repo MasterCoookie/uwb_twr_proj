@@ -290,7 +290,7 @@ int jk_twr_initiator(void)
                     distance = calculate_distance(resp_rx_ts, poll_tx_ts, resp_tx_ts, poll_rx_ts, clockOffsetRatio);
 
                     /* Display computed distance on LCD. */
-                    snprintf(dist_str, sizeof(dist_str), "DIST: %3.2f m", distance);
+                    snprintf(dist_str, sizeof(dist_str), "DIST: %3.2f m\n", distance);
                     // test_run_info((unsigned char *)dist_str);
                     udp_send_msg_connected(dist_str, 1);
                 }

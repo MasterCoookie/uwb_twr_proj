@@ -94,7 +94,7 @@ void udp_receive_callback(void *arg, struct udp_pcb *upcb, struct pbuf *p, const
 
 	// int len = sprintf(buf,"Wyslales %s. Malo to  istotne, bo PiS przejebal wybory :)", (char*)p->payload);
   responder_addr = (char*)p->payload;
-  int len = sprintf(buf, "TWR initialized with %s", responder_addr);
+  int len = sprintf(buf, "TWR initialized with %s\n", responder_addr);
   mesure_distance = 1;
 
 	/* allocate pbuf from RAM*/
