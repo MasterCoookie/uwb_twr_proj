@@ -304,7 +304,7 @@ int jk_twr_initiator(void)
             {
                 /* Clear RX error/timeout events in the DW IC status register. */
                 dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR);
-                
+                udp_send_msg_connected("RX ERROR/TIMEOUT\n", 1);
             }
 
             /* Execute a delay between ranging exchanges. */
