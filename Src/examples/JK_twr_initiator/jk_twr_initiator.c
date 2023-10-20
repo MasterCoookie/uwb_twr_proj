@@ -50,7 +50,7 @@ static dwt_config_t config = {
 
 /* Frames used in the ranging process. See NOTE 3 below. */
 static uint8_t tx_poll_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, '0', '0', '0', '0', 0xE0, 0, 0};
-static uint8_t rx_resp_msg[] = {0x40, 0x88, 0, 0xCA, 0xDE, '0', '0', '0', '0', 0xE1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static uint8_t rx_resp_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, '0', '0', '0', '0', 0xE1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 /* Length of the common part of the message (up to and including the function code, see NOTE 3 below). */
 #define ALL_MSG_COMMON_LEN 10
 /* Indexes to access some of the fields in the frames defined above. */
@@ -297,8 +297,7 @@ int jk_twr_initiator(void)
                 else
                 {
                     // send invalid frame message via udp
-                    snprintf(result_str, sizeof(result_str), "INVALID RESPONSE FRAME\n");
-                    udp_send_msg_connected(result_str, 1);
+                    udp_send_msg_connected("INVALID RESPONSE FRAME\n", 1);
                 }
             }
             else
