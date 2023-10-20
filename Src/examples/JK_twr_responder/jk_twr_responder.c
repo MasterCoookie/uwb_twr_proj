@@ -246,7 +246,7 @@ int jk_twr_responder(void)
     device_init();
     device_config();
 
-    set_own_addr("AA");
+    set_own_addr("BB");
 
     /* Loop forever responding to ranging requests. */
     while (1)

@@ -99,6 +99,7 @@ extern uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len);
 char* responder_addr = "00";
 char* initiator_addr = "AA";
 int mesure_distance = 0;
+char result_str[32] = {0};
 /* USER CODE END 0 */
 
 /**

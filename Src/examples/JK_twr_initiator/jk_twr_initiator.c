@@ -50,7 +50,7 @@ static dwt_config_t config = {
 
 /* Frames used in the ranging process. See NOTE 3 below. */
 static uint8_t tx_poll_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, '0', '0', '0', '0', 0xE0, 0, 0};
-static uint8_t rx_resp_msg[] = {0x41, 0x88, 0, 0xCA, 0xDE, '0', '0', '0', '0', 0xE1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static uint8_t rx_resp_msg[] = {0x40, 0x88, 0, 0xCA, 0xDE, '0', '0', '0', '0', 0xE1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 /* Length of the common part of the message (up to and including the function code, see NOTE 3 below). */
 #define ALL_MSG_COMMON_LEN 10
 /* Indexes to access some of the fields in the frames defined above. */
@@ -86,6 +86,7 @@ extern struct netif gnetif;
 extern char* responder_addr;
 extern char* initiator_addr;
 extern int mesure_distance;
+extern char result_str[32];
 
 // initialises device hardware (SPI etc.)
 void device_init(void)
@@ -262,7 +263,7 @@ int jk_twr_initiator(void)
     {
     	MX_LWIP_Process();
         if(mesure_distance) {
-            set_own_addr("BB");
+            set_own_addr("EE");
             set_destenation_addr(responder_addr);
             // initiate ranging exchange by sending a poll message
             transmit_poll_msg();
@@ -289,10 +290,15 @@ int jk_twr_initiator(void)
                     // calculate distance based on read and recieved timestamps
                     distance = calculate_distance(resp_rx_ts, poll_tx_ts, resp_tx_ts, poll_rx_ts, clockOffsetRatio);
 
-                    /* Display computed distance on LCD. */
-                    snprintf(dist_str, sizeof(dist_str), "DIST: %3.2f m\n", distance);
-                    // test_run_info((unsigned char *)dist_str);
-                    udp_send_msg_connected(dist_str, 1);
+                    // send distance via udp
+                    snprintf(result_str, sizeof(result_str), "DIST: %3.2f m\n", distance);
+                    udp_send_msg_connected(result_str, 1);
+                }
+                else
+                {
+                    // send invalid frame message via udp
+                    snprintf(result_str, sizeof(result_str), "INVALID RESPONSE FRAME\n");
+                    udp_send_msg_connected(result_str, 1);
                 }
             }
             else
