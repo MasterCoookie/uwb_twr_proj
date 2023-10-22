@@ -257,13 +257,12 @@ int jk_twr_initiator(void)
 
     device_config();
 
-
-    /* Loop forever initiating ranging exchanges. */
     while (1)
     {
+        Sleep(2);
     	MX_LWIP_Process();
         if(mesure_distance) {
-            set_own_addr("EE");
+            set_own_addr("DD");
             set_destenation_addr(responder_addr);
             // initiate ranging exchange by sending a poll message
             transmit_poll_msg();
@@ -292,19 +291,19 @@ int jk_twr_initiator(void)
 
                     // send distance via udp
                     snprintf(result_str, sizeof(result_str), "DIST: %3.2f m\n", distance);
-                    udp_send_msg_connected(result_str, 1);
+                    udp_send_msg_connected(result_str, 0);
                 }
                 else
                 {
                     // send invalid frame message via udp
-                    udp_send_msg_connected("INVALID RESPONSE FRAME\n", 1);
+                    udp_send_msg_connected("INVALID RESPONSE FRAME\n", 0);
                 }
             }
             else
             {
                 /* Clear RX error/timeout events in the DW IC status register. */
                 dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR);
-                udp_send_msg_connected("RX ERROR/TIMEOUT\n", 1);
+                udp_send_msg_connected("RX ERROR/TIMEOUT\n", 0);
             }
 
             /* Execute a delay between ranging exchanges. */

@@ -67,6 +67,7 @@ void _Error_Handler(char * file, int line);
 struct udp_pcb *upcb;
 extern char* responder_addr;
 extern int mesure_distance;
+extern int is_master_connected;
 /* USER CODE END 1 */
 
 /* Variables Initialization */
@@ -92,7 +93,6 @@ void udp_receive_callback(void *arg, struct udp_pcb *upcb, struct pbuf *p, const
   UNUSED(arg);
   UNUSED(remoteIP);
 
-	// int len = sprintf(buf,"Wyslales %s. Malo to  istotne, bo PiS przejebal wybory :)", (char*)p->payload);
   responder_addr = (char*)p->payload;
   int len = sprintf(buf, "TWR initialized with %s\n", responder_addr);
   mesure_distance = 1;
@@ -104,13 +104,14 @@ void udp_receive_callback(void *arg, struct udp_pcb *upcb, struct pbuf *p, const
 	pbuf_take(txBuf, buf, len);
 
 	/* Connect to the remote client */
-	udp_connect(upcb, addr, port);
+  if(!is_master_connected)
+  {
+	  udp_connect(upcb, addr, port);
+    is_master_connected = 1;
+  }
 
 	/* Send a Reply to the Client */
 	udp_send(upcb, txBuf);
-
-	/* free the UDP connection, so we can accept new clients */
-	// udp_disconnect(upcb);
 
 	/* Free the p_tx buffer */
 	pbuf_free(txBuf);
@@ -143,6 +144,7 @@ void udp_send_msg_connected(char *msg, int disconnect)
   {
     /* free the UDP connection, so we can accept new clients */
     udp_disconnect(upcb);
+    is_master_connected = 0;
   }
 }
 
@@ -157,7 +159,7 @@ void MX_LWIP_Init(void)
   IP_ADDRESS[0] = 192;
   IP_ADDRESS[1] = 168;
   IP_ADDRESS[2] = 0;
-  IP_ADDRESS[3] = 113;
+  IP_ADDRESS[3] = 13;
   NETMASK_ADDRESS[0] = 255;
   NETMASK_ADDRESS[1] = 255;
   NETMASK_ADDRESS[2] = 255;
@@ -165,7 +167,7 @@ void MX_LWIP_Init(void)
   GATEWAY_ADDRESS[0] = 192;
   GATEWAY_ADDRESS[1] = 168;
   GATEWAY_ADDRESS[2] = 0;
-  GATEWAY_ADDRESS[3] = 113;
+  GATEWAY_ADDRESS[3] = 13;
   
   /* Initilialize the LwIP stack without RTOS */
   lwip_init();
@@ -177,7 +179,7 @@ void MX_LWIP_Init(void)
   
   upcb = udp_new();
 
-  err_t err = udp_bind(upcb, &ipaddr, 7);  // 7 is the server UDP port
+  err_t err = udp_bind(upcb, &ipaddr, 13);
 
    /* 3. Set a receive callback for the upcb */
   if(err == ERR_OK)
