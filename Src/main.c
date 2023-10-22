@@ -97,10 +97,15 @@ extern uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len);
 
 /* USER CODE BEGIN 0 */
 char* responder_addr = "00";
-char* initiator_addr = "AA";
+char* initiator_addr = "00";
 int mesure_distance = 0;
 int is_master_connected = 0;
 char result_str[32] = {0};
+
+uint8_t ip_last_section = 0;
+uint8_t gateway_last_section = 0;
+uint8_t mac_last_section = 0x00;
+
 /* USER CODE END 0 */
 
 /**
@@ -143,7 +148,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-   MX_LWIP_Init();
+  MX_LWIP_Init();
   MX_TIM1_Init();
   MX_USART3_UART_Init();
   MX_USB_DEVICE_Init();
