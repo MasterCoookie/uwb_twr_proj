@@ -53,6 +53,7 @@
 #include "usb_device.h"
 #include <port.h>
 #include "examples_defines.h"
+#include "jk_options.h"
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
@@ -102,10 +103,20 @@ int mesure_distance = 0;
 int is_master_connected = 0;
 char result_str[32] = {0};
 
-uint8_t ip_last_section = 0;
-uint8_t gateway_last_section = 0;
-uint8_t mac_last_section = 0x00;
+#ifdef DEVICE_1
+uint8_t ip_last_section = 112;
+uint8_t gateway_last_section = 112;
+uint8_t mac_last_section = 0x01;
+char* initiator_addr = "DD";
 
+#elif defined(DEVICE_2)
+uint8_t ip_last_section = 113;
+uint8_t gateway_last_section = 113;
+uint8_t mac_last_section = 0x01;
+char* initiator_addr = "EE";
+#elif defined(DEVICE_3)
+#elif defined(DEVICE_4)
+#endif
 /* USER CODE END 0 */
 
 /**
