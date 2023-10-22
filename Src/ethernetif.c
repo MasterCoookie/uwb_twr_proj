@@ -203,7 +203,7 @@ void HAL_ETH_MspDeInit(ETH_HandleTypeDef* ethHandle)
 }
 
 /* USER CODE BEGIN 4 */
-
+extern uint8_t mac_last_section;
 /* USER CODE END 4 */
 
 /*******************************************************************************
@@ -232,7 +232,7 @@ static void low_level_init(struct netif *netif)
   MACAddr[2] = 0xE1;
   MACAddr[3] = 0x00;
   MACAddr[4] = 0x00;
-  MACAddr[5] = 0x02;
+  MACAddr[5] = mac_last_section;
   heth.Init.MACAddr = &MACAddr[0];
   heth.Init.RxMode = ETH_RXPOLLING_MODE;
   heth.Init.ChecksumMode = ETH_CHECKSUM_BY_HARDWARE;

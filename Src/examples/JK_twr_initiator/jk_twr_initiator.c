@@ -261,7 +261,9 @@ int jk_twr_initiator(void)
     {
     	MX_LWIP_Process();
         if(mesure_distance) {
-            set_own_addr("DD");
+            // can be potentially set by udp message
+            set_own_addr(initiator_addr);
+            // is set by udp message
             set_destenation_addr(responder_addr);
             // initiate ranging exchange by sending a poll message
             transmit_poll_msg();

@@ -68,6 +68,10 @@ struct udp_pcb *upcb;
 extern char* responder_addr;
 extern int mesure_distance;
 extern int is_master_connected;
+
+extern uint8_t ip_last_section;
+extern uint8_t gateway_last_section;
+extern uint8_t udp_server_port;
 /* USER CODE END 1 */
 
 /* Variables Initialization */
@@ -80,6 +84,7 @@ uint8_t NETMASK_ADDRESS[4];
 uint8_t GATEWAY_ADDRESS[4];
 
 /* USER CODE BEGIN 2 */
+
 
 void udp_receive_callback(void *arg, struct udp_pcb *upcb, struct pbuf *p, const ip_addr_t *addr, u16_t port)
 {
@@ -159,7 +164,7 @@ void MX_LWIP_Init(void)
   IP_ADDRESS[0] = 192;
   IP_ADDRESS[1] = 168;
   IP_ADDRESS[2] = 0;
-  IP_ADDRESS[3] = 13;
+  IP_ADDRESS[3] = ip_last_section;
   NETMASK_ADDRESS[0] = 255;
   NETMASK_ADDRESS[1] = 255;
   NETMASK_ADDRESS[2] = 255;
@@ -167,7 +172,7 @@ void MX_LWIP_Init(void)
   GATEWAY_ADDRESS[0] = 192;
   GATEWAY_ADDRESS[1] = 168;
   GATEWAY_ADDRESS[2] = 0;
-  GATEWAY_ADDRESS[3] = 13;
+  GATEWAY_ADDRESS[3] = gateway_last_section;
   
   /* Initilialize the LwIP stack without RTOS */
   lwip_init();
@@ -179,7 +184,7 @@ void MX_LWIP_Init(void)
   
   upcb = udp_new();
 
-  err_t err = udp_bind(upcb, &ipaddr, 13);
+  err_t err = udp_bind(upcb, &ipaddr, udp_server_port);
 
    /* 3. Set a receive callback for the upcb */
   if(err == ERR_OK)
