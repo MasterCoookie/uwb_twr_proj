@@ -259,7 +259,6 @@ int jk_twr_initiator(void)
 
     while (1)
     {
-        Sleep(2);
     	MX_LWIP_Process();
         if(mesure_distance) {
             set_own_addr("DD");
@@ -307,7 +306,6 @@ int jk_twr_initiator(void)
             }
 
             /* Execute a delay between ranging exchanges. */
-            // Sleep(RNG_DELAY_MS);
             mesure_distance = 0;
         }
 
