@@ -1,6 +1,11 @@
 {
     "files.associations": {
         "*.ejs": "html",
-        "examples_defines.h": "c"
+        "examples_defines.h": "c",
+        "lwip.h": "c",
+        "stm32f4xx_hal.h": "c",
+        "stm32f4xx_hal_conf.h": "c",
+        "main.h": "c",
+        "port.h": "c"
     }
 }

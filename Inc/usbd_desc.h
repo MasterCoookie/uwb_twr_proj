@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file           : usbd_desc.c
+  * @file           : usbd_desc.h
   * @version        : v1.0_Cube
   * @brief          : Header for usbd_desc.c file.
   ******************************************************************************
@@ -10,7 +10,7 @@
   * inserted by the user or by software development tools
   * are owned by their respective copyright owners.
   *
-  * Copyright (c) 2019 STMicroelectronics International N.V. 
+  * Copyright (c) 2023 STMicroelectronics International N.V. 
   * All rights reserved.
   *
   * Redistribution and use in source and binary forms, with or without 

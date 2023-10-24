@@ -1,7 +1,7 @@
 [PreviousGenFiles]
-HeaderPath=C:/Users/wpan/wp_proj/dw3000_api_platform_swap/wp/EVK1000_F429_CubeMX/Inc
+HeaderPath=D:/STM32Cube_Projects/API_saved/Inc
 HeaderFiles=lwip.h;lwipopts.h;ethernetif.h;usb_device.h;usbd_conf.h;usbd_desc.h;usbd_cdc_if.h;stm32f4xx_it.h;stm32f4xx_hal_conf.h;main.h;
-SourcePath=C:/Users/wpan/wp_proj/dw3000_api_platform_swap/wp/EVK1000_F429_CubeMX/Src
+SourcePath=D:/STM32Cube_Projects/API_saved/Src
 SourceFiles=lwip.c;ethernetif.c;usb_device.c;usbd_conf.c;usbd_desc.c;usbd_cdc_if.c;stm32f4xx_it.c;stm32f4xx_hal_msp.c;stm32f4xx_hal_timebase_TIM.c;main.c;
 
 [PreviousLibFiles]

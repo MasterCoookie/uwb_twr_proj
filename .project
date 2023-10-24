@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
 	<name>EVK3000_F429_CubeMX</name>
-	<comment></comment>
+	<comment />
 	<projects>
 	</projects>
 	<buildSpec>
@@ -27,7 +27,7 @@
 	<filteredResources>
 		<filter>
 			<id>1593688837547</id>
-			<name></name>
+			<name />
 			<type>26</type>
 			<matcher>
 				<id>org.eclipse.ui.ide.multiFilter</id>

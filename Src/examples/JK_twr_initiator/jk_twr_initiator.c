@@ -14,11 +14,13 @@
 #include <example_selection.h>
 #include <config_options.h>
 #include <stdbool.h>
+#include <lwip.h>
 
 #if defined(JK_TWR_INITIATOR)
 
 extern void test_run_info(unsigned char *data);
 
+#define MESURE_DIST 0
 /* Example application name */
 #define APP_NAME "JK TWR INIT v1.0"
 
@@ -79,6 +81,12 @@ static double distance;
 /* Values for the PG_DELAY and TX_POWER registers reflect the bandwidth and power of the spectrum at the current
  * temperature. These values can be calibrated prior to taking reference measurements. See NOTE 2 below. */
 extern dwt_txconfig_t txconfig_options;
+extern struct netif gnetif;
+
+extern char* responder_addr;
+extern char* initiator_addr;
+extern int mesure_distance;
+extern char result_str[32];
 
 // initialises device hardware (SPI etc.)
 void device_init(void)
@@ -249,49 +257,59 @@ int jk_twr_initiator(void)
 
     device_config();
 
-    /* Loop forever initiating ranging exchanges. */
     while (1)
     {
-        set_own_addr("CC");
-        set_destenation_addr("AA");
-        // initiate ranging exchange by sending a poll message
-        transmit_poll_msg();
+    	MX_LWIP_Process();
+        if(mesure_distance) {
+            // can be potentially set by udp message
+            set_own_addr(initiator_addr);
+            // is set by udp message
+            set_destenation_addr(responder_addr);
+            // initiate ranging exchange by sending a poll message
+            transmit_poll_msg();
 
-        // wait for response/timeout
-        await_poll_response();
+            // wait for response/timeout
+            await_poll_response();
 
-        // check error register
-        if (status_reg & SYS_STATUS_RXFCG_BIT_MASK)
-        {
-            // read and validate recieved frame
-            if(validate_response_frame(read_response_frame()))
+            // check error register
+            if (status_reg & SYS_STATUS_RXFCG_BIT_MASK)
             {
-                uint32_t poll_tx_ts, resp_rx_ts, poll_rx_ts, resp_tx_ts;
-                float clockOffsetRatio;
-                
-                // read device timestamps (poll send timestamp and response recieved timestamp) and calculate clock offset ratio
-                read_timestamps(&poll_tx_ts, &resp_rx_ts, &clockOffsetRatio);
+                // read and validate recieved frame
+                if(validate_response_frame(read_response_frame()))
+                {
+                    uint32_t poll_tx_ts, resp_rx_ts, poll_rx_ts, resp_tx_ts;
+                    float clockOffsetRatio;
+                    
+                    // read device timestamps (poll send timestamp and response recieved timestamp) and calculate clock offset ratio
+                    read_timestamps(&poll_tx_ts, &resp_rx_ts, &clockOffsetRatio);
 
-                /* Get timestamps embedded in response message. */
-                resp_msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX], &poll_rx_ts);
-                resp_msg_get_ts(&rx_buffer[RESP_MSG_RESP_TX_TS_IDX], &resp_tx_ts);
+                    /* Get timestamps embedded in response message. */
+                    resp_msg_get_ts(&rx_buffer[RESP_MSG_POLL_RX_TS_IDX], &poll_rx_ts);
+                    resp_msg_get_ts(&rx_buffer[RESP_MSG_RESP_TX_TS_IDX], &resp_tx_ts);
 
-                // calculate distance based on read and recieved timestamps
-                distance = calculate_distance(resp_rx_ts, poll_tx_ts, resp_tx_ts, poll_rx_ts, clockOffsetRatio);
+                    // calculate distance based on read and recieved timestamps
+                    distance = calculate_distance(resp_rx_ts, poll_tx_ts, resp_tx_ts, poll_rx_ts, clockOffsetRatio);
 
-                /* Display computed distance on LCD. */
-                snprintf(dist_str, sizeof(dist_str), "DIST: %3.2f m", distance);
-                test_run_info((unsigned char *)dist_str);
+                    // send distance via udp
+                    snprintf(result_str, sizeof(result_str), "DIST: %3.2f m\n", distance);
+                    udp_send_msg_connected(result_str, 0);
+                }
+                else
+                {
+                    // send invalid frame message via udp
+                    udp_send_msg_connected("INVALID RESPONSE FRAME\n", 0);
+                }
             }
-        }
-        else
-        {
-            /* Clear RX error/timeout events in the DW IC status register. */
-            dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR);
-        }
+            else
+            {
+                /* Clear RX error/timeout events in the DW IC status register. */
+                dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_ALL_RX_TO | SYS_STATUS_ALL_RX_ERR);
+                udp_send_msg_connected("RX ERROR/TIMEOUT\n", 0);
+            }
 
-        /* Execute a delay between ranging exchanges. */
-        Sleep(RNG_DELAY_MS);
+            /* Execute a delay between ranging exchanges. */
+            mesure_distance = 0;
+        }
 
     }
 }

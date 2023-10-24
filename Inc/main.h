@@ -10,7 +10,7 @@
   * inserted by the user or by software development tools
   * are owned by their respective copyright owners.
   *
-  * Copyright (c) 2019 STMicroelectronics International N.V. 
+  * Copyright (c) 2023 STMicroelectronics International N.V. 
   * All rights reserved.
   *
   * Redistribution and use in source and binary forms, with or without 
@@ -58,7 +58,6 @@
 /* USER CODE END Includes */
 
 /* Private define ------------------------------------------------------------*/
-#ifdef STM32F429xx
 #define LWIP_TIMEVAL_PRIVATE 0
 
 #define USER_Btn_Pin GPIO_PIN_13
@@ -121,7 +120,6 @@
 #define DW_MOSI_GPIO_Port GPIOB
 #define LD2_Pin GPIO_PIN_7
 #define LD2_GPIO_Port GPIOB
-#endif //STM32F429xx
 
 /* ########################## Assert Selection ############################## */
 /**
