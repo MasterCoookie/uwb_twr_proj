@@ -97,16 +97,18 @@ void udp_receive_callback(void *arg, struct udp_pcb *upcb, struct pbuf *p, const
 
   UNUSED(arg);
   UNUSED(remoteIP);
+  UNUSED(txBuf);
+  UNUSED(buf);
 
   responder_addr = (char*)p->payload;
-  int len = sprintf(buf, "TWR initialized with %s\n", responder_addr);
+  // int len = sprintf(buf, "TWR initialized with %s\n", responder_addr);
   mesure_distance = 1;
 
 	/* allocate pbuf from RAM*/
-	txBuf = pbuf_alloc(PBUF_TRANSPORT,len, PBUF_RAM);
+	// txBuf = pbuf_alloc(PBUF_TRANSPORT,len, PBUF_RAM);
 
 	/* copy the data into the buffer  */
-	pbuf_take(txBuf, buf, len);
+	// pbuf_take(txBuf, buf, len);
 
 	/* Connect to the remote client */
   if(!is_master_connected)
@@ -116,10 +118,10 @@ void udp_receive_callback(void *arg, struct udp_pcb *upcb, struct pbuf *p, const
   }
 
 	/* Send a Reply to the Client */
-	udp_send(upcb, txBuf);
+	// udp_send(upcb, txBuf);
 
 	/* Free the p_tx buffer */
-	pbuf_free(txBuf);
+	// pbuf_free(txBuf);
 
 	/* Free the p buffer */
 	pbuf_free(p);
