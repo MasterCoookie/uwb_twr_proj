@@ -291,7 +291,7 @@ int jk_twr_initiator(void)
                     distance = calculate_distance(resp_rx_ts, poll_tx_ts, resp_tx_ts, poll_rx_ts, clockOffsetRatio);
 
                     // send distance via udp
-                    snprintf(result_str, sizeof(result_str), "DIST: %3.2f m\n", distance);
+                    sprintf(result_str, "DIST %s to %s: %3.2fm\n", initiator_addr, responder_addr, distance);
                     udp_send_msg_connected(result_str, 0);
                 }
                 else
